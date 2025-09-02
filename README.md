@@ -5,8 +5,6 @@
 <p align="center">
   <!-- Custom project identity badge -->
   <img src="https://img.shields.io/badge/Memora-Archive%20Explorer-purple?style=for-the-badge&logo=archivebox&logoColor=white" alt="Memora badge" />
-  <!-- License -->
-  <img src="https://img.shields.io/github/license/NeurosynLabs/Memora?style=for-the-badge" alt="license" />
   <!-- Release -->
   <img src="https://img.shields.io/github/v/release/NeurosynLabs/Memora?style=for-the-badge" alt="release" />
   <!-- Last Commit -->
