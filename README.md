@@ -60,7 +60,7 @@
 ## 🖼 Screenshots
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/NeurosynLabs/Memora/refs/heads/main/img/Screenshot_20250901-171052.Chrome%7E2.png?token=GHSAT0AAAAAADKJUZOXUYZQVVAOVKFWP7EM2FWH24A" 
+  <img src="https://raw.githubusercontent.com/NeurosynLabs/Memora/refs/heads/main/img/Screenshot_20250901-171052.Chrome%7E2.png" 
        width="85%" 
        alt="Memora dark mode screenshot" />
 </p>
