@@ -1,75 +1,93 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Conversation Archive Explorer</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <title>Memora</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Puter.js (auth & jobs runtime) -->
+  <script src="https://js.puter.com/v2/"></script>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body class="theme-dark">
+
+  <!-- Top header -->
   <header>
-    <h1>Conversation Archive Explorer</h1>
-    <div id="ingestStatus"></div>
+    <h1>🧠 Memora</h1>
+    <div>
+      <button id="optionsBtn">Options</button>
+    </div>
   </header>
 
+  <!-- Controls row -->
   <div id="controls">
     <div class="panel">
-      <h2>Import Files</h2>
-      <input type="file" id="fileInput" multiple>
-      <div id="dropZone">Drop files here</div>
-      <button id="clearDb">Reset IndexedDB</button>
-    </div>
-
-    <div class="panel">
       <h2>Search</h2>
-      <input type="text" id="searchBox" placeholder="Search keyword">
+      <input id="searchBox" type="text" placeholder="keyword…">
       <button id="searchBtn">Search</button>
+      <div class="hint">Or use $RECALL in the box below to trigger recall-mode.</div>
+      <input id="recallBox" type="text" placeholder="$RECALL your-topic">
+      <button id="recallBtn">Run $RECALL</button>
+
+      <div id="ingestStatus" aria-live="polite" class="hint" style="margin-top:8px;"></div>
     </div>
 
     <div class="panel">
-      <h2>Recall</h2>
-      <input type="text" id="recallBox" placeholder="$RECALL keyword">
-      <button id="recallBtn">Recall</button>
+      <h2>Import</h2>
+      <input id="fileInput" type="file" multiple />
+      <div id="dropZone">Drop your ChatGPT export files here<br>
+        <span class="hint">conversations.json, user.json, message_feedback.json, chat.html</span>
+      </div>
+      <div style="margin-top:8px;">
+        <button id="clearDb">Reset IndexedDB</button>
+      </div>
     </div>
 
     <div class="panel">
-      <h2>Options</h2>
-      <label>OpenAI Key</label><br>
-      <input type="password" id="openaiKey" placeholder="sk-..."><br>
-      <label>Model</label><br>
-      <input type="text" id="openaiModel" value="gpt-4o-mini"><br>
-      <button id="saveOpts">Save Options</button>
+      <h2>Model Options</h2>
+      <label>OpenAI Key
+        <input id="openaiKey" type="password" placeholder="sk-…">
+      </label>
+      <label>OpenAI Model
+        <input id="openaiModel" type="text" value="gpt-4o-mini">
+      </label>
+      <button id="saveOpts">Save</button>
+      <div class="hint">OpenAI key is only used for local (browser) summarization, not for puter.js.</div>
     </div>
   </div>
 
+  <!-- Main layout -->
   <main>
-    <div id="threads" class="panel">
-      <h2>Threads</h2>
+    <aside id="threads">
+      <div class="hint">Threads (count loads here) • click “Show list” in sidebar</div>
       <ul id="threadList"></ul>
-    </div>
-    <div id="content" class="panel">
-      <h2>Content</h2>
-      <div id="results"></div>
-    </div>
+    </aside>
+
+    <section id="content">
+      <div id="results" class="panel">
+        <div class="hint">Results/messages will render here when you open a thread or use Export/Preview.</div>
+      </div>
+    </section>
   </main>
 
-  <!-- Floating search overlay -->
+  <!-- Floating Search Overlay -->
   <div id="searchOverlay">
     <div id="searchPanel">
       <div id="searchHeader">
         <div class="left">
-          <b id="searchTitle">Results</b>
+          <strong id="searchTitle">Results</strong>
           <div id="searchProgress"><div class="bar"></div></div>
           <span id="searchCounts" class="hint"></span>
         </div>
         <div class="right">
-          <label>View</label>
           <select id="searchView">
             <option value="grid">Grid</option>
             <option value="row">Row</option>
             <option value="list">List</option>
           </select>
-          <button id="mergeBtn" class="small">Merge Results</button>
           <button id="loadMoreBtn" class="small">Load 200 more</button>
+          <!-- New: summarize via puter -->
+          <button id="summarizePuterBtn" class="small">Summarize (puter.js)</button>
+          <button id="mergeBtn" class="small">Merge Results</button>
           <button id="closeSearch" class="small">Close</button>
         </div>
       </div>
@@ -79,24 +97,92 @@
     </div>
   </div>
 
-  <!-- Export picker modal -->
+  <!-- Export Picker Modal -->
   <div id="exportPicker">
     <div id="exportCard">
       <header>Export merged results</header>
-      <div>Exporting <b id="exportCount">0</b> items for <b id="exportTitle"></b>.</div>
+      <div>Exporting <b id="exportCount">0</b> items for <b id="exportTitle">merged</b>.</div>
       <div class="row">
         <label for="exportType">Format</label>
         <select id="exportType">
           <option value="txt">Plain text (.txt)</option>
           <option value="md">Markdown (.md)</option>
           <option value="json">JSON (.json)</option>
-          <option value="pdf">PDF (print/save as PDF)</option>
+          <option value="jsonl">JSON Lines (.jsonl)</option>
+          <option value="pdf">PDF (print)</option>
         </select>
       </div>
       <div class="actions">
         <button id="exportCancel">Cancel</button>
         <button id="exportGo">Export</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Options Modal -->
+  <div id="optionsModal" class="modal hidden">
+    <div class="modal-card">
+      <header>⚙️ Options</header>
+      <section>
+        <h3>OpenAI (local summarization)</h3>
+        <label>API Key <input id="optOpenaiKey" type="password" placeholder="sk-…" /></label>
+        <label>Model <input id="optOpenaiModel" type="text" value="gpt-4o-mini" /></label>
+      </section>
+      <section>
+        <h3>Puter</h3>
+        <div id="puterUserStatus" class="hint">Checking sign-in…</div>
+        <button id="openPuterAuth">Manage Puter Account</button>
+      </section>
+      <footer style="margin-top:10px;">
+        <button id="closeOptions">Close</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Puter Auth Gate (blocking until signed-in) -->
+<div id="puterAuthModal" class="modal">
+  <div class="modal-card">
+    <header>🔐 Connect to Puter</header>
+    <section>
+      <p>This app uses <b>puter.js</b> to run summarization jobs in the background.</p>
+      <div class="btn-row">
+        <button id="btnPuterGuest"  class="btn primary">Continue as Guest</button>
+        <button id="btnPuterLogin"  class="btn">Log in</button>
+        <button id="btnPuterSignup" class="btn">Create Account</button>
+      </div>
+
+      <!-- Optional: embedded widget as a fallback/alternate UX -->
+      <div id="puterAuthWidget" class="auth-widget hint"></div>
+
+      <ul class="hint" style="margin-top:10px;">
+        <li>Guest = temporary account (quick start)</li>
+        <li>Log in / Create account to keep job history</li>
+      </ul>
+    </section>
+  </div>
+</div>
+
+  <!-- Job Status Dock (for puter jobs) -->
+  <div id="jobStatusDock" class="hidden">
+    <header>Summarization Job</header>
+    <div id="jobStatusText">Idle</div>
+    <div class="progress"><div id="jobProgressBar"></div></div>
+    <div id="jobLogs"></div>
+    <div class="actions">
+      <button id="viewSummaryMd">View Summary (MD)</button>
+      <button id="viewSummaryJson">View Summary (JSON)</button>
+      <button id="cancelJob">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Digest Preview Modal (renders summary.md) -->
+  <div id="digestPreview" class="modal hidden">
+    <div class="modal-card large">
+      <header>📄 Summary Preview</header>
+      <section id="digestContent"></section>
+      <footer>
+        <button id="closeDigest">Close</button>
+      </footer>
     </div>
   </div>
 

@@ -1,400 +1,116 @@
-/* =========================================================
-   Conversation Archive Explorer — Mobile-first GitHub Dark
-   Big, tap-friendly controls; overlay fills screen on mobile
-   ========================================================= */
-
-/* ---------- Theme vars ---------- */
+/* Base GitHub-dark */
 :root{
-  --gh-bg:#0d1117;
-  --gh-surface:#161b22;
-  --gh-border:#30363d;
-  --gh-text:#e6edf3;
-  --gh-accent:#58a6ff;
-  --gh-muted:#8b949e;
-
-  /* Mobile-first type scale */
-  --fs-xs: 0.95rem;
-  --fs-sm: 1.05rem;
-  --fs-md: 1.15rem;  /* body */
-  --fs-lg: 1.4rem;   /* h2 */
-  --fs-xl: 1.8rem;   /* h1 */
-
-  --radius: 14px;
-  --pad:    16px;
+  --bg:#0d1117;
+  --surface:#161b22;
+  --border:#30363d;
+  --text:#e6edf3;
+  --muted:#8b949e;
+  --accent:#58a6ff;
+  --ok:#238636;
 }
 
-/* Desktop/tablet adjust (tighten slightly) */
-@media (min-width: 768px){
-  :root{
-    --fs-xs: 0.9rem;
-    --fs-sm: 1rem;
-    --fs-md: 1.05rem;
-    --fs-lg: 1.25rem;
-    --fs-xl: 1.6rem;
-    --radius: 12px;
-    --pad:    14px;
-  }
+body{ margin:0; background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; }
+header{ padding:12px 16px; background:#161b22; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+h1{ margin:0; font-size:20px; }
+h2{ margin:0 0 8px 0; font-size:16px; }
+.hint{ color:var(--muted); font-size:12px; }
+
+button{
+  background:#21262d; color:var(--text); border:1px solid var(--border);
+  border-radius:6px; padding:6px 10px; cursor:pointer;
 }
-@media (min-width: 1100px){
-  :root{
-    --fs-md: 1rem;
-    --fs-lg: 1.15rem;
-    --fs-xl: 1.5rem;
-    --radius: 10px;
-    --pad:    12px;
-  }
+button:hover{ background:#30363d; }
+button.small{ font-size:12px; padding:4px 8px; }
+
+input, select{
+  background:#0d1117; color:var(--text); border:1px solid var(--border);
+  border-radius:6px; padding:6px 8px; width:100%; box-sizing:border-box;
+  margin:4px 0 8px 0;
 }
 
-/* ---------- Base ---------- */
-html, body{
-  background: var(--gh-bg);
-  color: var(--gh-text);
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  font-size: 18px;           /* larger base on mobile */
-  line-height: 1.45;
-  margin: 0;
-}
+/* Panels & layout */
+#controls{ display:grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap:12px; padding:12px 16px; }
+.panel{ background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px; }
+#dropZone{ border:2px dashed var(--border); border-radius:8px; padding:16px; text-align:center; color:var(--muted); }
 
-/* Prefer 44px+ interactive targets on touch */
-button, input, select{
-  font-size: var(--fs-md);
-  padding: 0.7em 1em;
-  min-height: 44px;
-  border-radius: var(--radius);
-  background: var(--gh-surface);
-  color: var(--gh-text);
-  border: 1px solid var(--gh-border);
-  outline: none;
-}
-button:hover{ background:#1b2230; }
-input::placeholder{ color: #9aa4b2; }
-select{ padding-right: 2.1em; }
-
-header{
-  padding: 14px 16px;
-  background:#010409;
-  border-bottom:1px solid var(--gh-border);
-}
-h1{
-  margin:0;
-  font-size: var(--fs-xl);
-  letter-spacing:.2px;
-}
-h2{
-  margin:0 0 8px 0;
-  font-size: var(--fs-lg);
-}
-
-/* ---------- Panels & layout ---------- */
-.panel{
-  background: var(--gh-surface);
-  border:1px solid var(--gh-border);
-  border-radius: var(--radius);
-  padding: var(--pad);
-}
-
-/* Mobile: single column, comfy spacing */
-#controls{
-  display:grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-  padding: 12px;
-}
-
-/* Desktop: multi column */
-@media (min-width: 900px){
-  #controls{
-    grid-template-columns: repeat(3, minmax(260px, 1fr));
-    gap: 14px;
-    padding: 14px 16px;
-  }
-}
-
-#dropZone{
-  border:2px dashed var(--gh-border);
-  border-radius: calc(var(--radius) - 2px);
-  padding: 18px;
-  text-align:center;
-  color: var(--gh-muted);
-  margin-top: 10px;
-}
-
-/* Main area */
-main{
-  display:block;
-  padding: 12px;
-  gap: 12px;
-}
-@media (min-width: 900px){
-  main{
-    display:grid;
-    grid-template-columns: 320px 1fr;
-    align-items: start;
-  }
-}
-
-/* ---------- Threads sidebar ---------- */
-#threads{
-  background: var(--gh-surface);
-  border:1px solid var(--gh-border);
-  border-radius: var(--radius);
-  padding: var(--pad);
-  margin-bottom: 12px;
-}
-@media (min-width: 900px){
-  #threads{ margin-bottom: 0; max-height: 75vh; overflow:auto; }
-}
+main{ display:grid; grid-template-columns: 300px 1fr; gap:12px; padding: 0 16px 16px; }
+#threads{ background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:10px; overflow:auto; max-height:75vh; }
 #threadList{ list-style:none; margin:0; padding:0; }
-#threadList li{
-  padding: 12px 10px;
-  border-bottom:1px dashed var(--gh-border);
-  cursor:pointer;
-  font-size: var(--fs-md);
-}
+#threadList li{ padding:8px; border-bottom:1px dashed var(--border); cursor:pointer; }
 #threadList li:hover{ background:#1f242d; }
 
-/* ---------- Content ---------- */
-#content{
-  background: var(--gh-surface);
-  border:1px solid var(--gh-border);
-  border-radius: var(--radius);
-  padding: var(--pad);
-  min-height: 50vh;
-}
-.message{ border-bottom:1px solid var(--gh-border); padding:10px 0; }
-.message .meta{ color:var(--gh-muted); font-size: var(--fs-xs); }
-.message .role{ font-weight:600; margin-right:6px; }
+#content{ background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:10px; min-height:70vh; }
 
-.badge{
-  display:inline-block; padding:4px 10px;
-  background:#1f6feb; color:#fff; font-weight:600;
-  border-radius: 999px; margin: 0 6px 6px 0;
-  font-size: var(--fs-xs);
-}
-.hint{ color:var(--gh-muted); font-size: var(--fs-xs); }
-#ingestStatus{ font-size: var(--fs-xs); margin-top: 6px; }
-
-/* ---------- Code/pre ---------- */
-pre{
-  background:#0b1020;
-  color:#e6edf3;
-  padding: 12px;
-  border-radius: 10px;
-  overflow:auto;
-  border:1px solid var(--gh-border);
-  font-size: 0.95rem;
-}
-
-/* ---------- Results cards (used in overlay) ---------- */
-.results-grid{
-  display:grid;
-  grid-template-columns: 1fr;      /* one per row on mobile */
-  gap: 12px;
-}
-@media (min-width: 700px){
-  .results-grid{ grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
-}
-.results-row{ display:flex; gap:12px; overflow-x:auto; padding-bottom:8px; }
-
-.card{
-  background:#0d1117;
-  border:1px solid var(--gh-border);
-  border-radius: var(--radius);
-  padding: 12px;
-  min-width: auto;
-  max-height: 340px;
-  overflow:hidden;
-  display:flex; flex-direction:column;
-  font-size: var(--fs-md);
-}
-.card .meta{
-  color:var(--gh-muted);
-  font-size: var(--fs-xs);
-  margin-bottom:6px;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-}
-.card .snippet{ font-size: 1rem; color:var(--gh-text); overflow:hidden; }
-.card .actions{ margin-top:auto; display:flex; gap:10px; }
-.card button.small{ font-size: var(--fs-sm); padding: .55em .9em; }
-.card.expanded{ max-height:none; }
-
-/* ---------- Floating Search Overlay ---------- */
-#searchOverlay{
-  position: fixed; inset: 0; display:none; z-index: 9998;
-  background: rgba(0,0,0,.55);
-  align-items: center; justify-content: center;
-}
+/* Search overlay */
+#searchOverlay{ position:fixed; inset:0; display:none; z-index:1000; background:rgba(0,0,0,.55); align-items:center; justify-content:center; }
 #searchPanel{
-  width: 100%; height: 100%;           /* full screen on mobile */
-  background: var(--gh-surface);
-  color: var(--gh-text);
-  border-top: 1px solid var(--gh-border);
-  border-left: none; border-right: none; border-bottom: none;
-  border-radius: 0;
-  display:flex; flex-direction:column; overflow: hidden;
+  width:min(1100px,95vw); height:min(90vh,95vh);
+  background:var(--surface); border:1px solid var(--border); border-radius:10px;
+  display:flex; flex-direction:column; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,.35);
 }
-@media (min-width: 900px){
-  #searchPanel{
-    width: min(1100px, 95vw);
-    height: min(88vh, 95vh);
-    border:1px solid var(--gh-border);
-    border-radius: var(--radius);
-    box-shadow: 0 8px 24px rgba(0,0,0,.35);
-  }
-}
-#searchHeader{
-  display:flex; align-items:center; justify-content:space-between;
-  gap:10px; padding: 12px;
-  border-bottom:1px solid var(--gh-border);
-  flex-wrap: wrap;           /* keep controls reachable */
-}
-#searchHeader .left{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-#searchHeader .right{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-#searchBody{ flex:1; overflow:auto; padding: 12px; }
+#searchHeader{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px; border-bottom:1px solid var(--border); }
+#searchBody{ flex:1; overflow:auto; padding:10px; }
+#searchProgress{ height:8px; background:rgba(255,255,255,.12); border-radius:8px; overflow:hidden; display:none; }
+#searchProgress .bar{ height:100%; width:0%; background:var(--accent); transition:width .2s ease; }
 
-/* Determinate progress */
-#searchProgress{
-  height: 10px; width: 240px;
-  background: rgba(255,255,255,.12);
-  border-radius: 10px; overflow:hidden;
-  display:none;
+.results-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(320px,1fr)); gap:12px; }
+.results-row{ display:flex; gap:12px; overflow-x:auto; }
+.card{
+  background:#0d1117; border:1px solid var(--border); border-radius:10px;
+  padding:10px; min-width:320px; max-height:260px; overflow:hidden; display:flex; flex-direction:column;
 }
-#searchProgress .bar{
-  height:100%; width:0%;
-  background: var(--gh-accent);
-  transition: width .2s ease;
-}
+.card .meta{ color:#8b949e; font-size:12px; margin-bottom:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.card .snippet{ font-size:13px; color:#e6edf3; overflow:hidden; }
+.card .actions{ margin-top:auto; display:flex; gap:8px; }
 
-/* ---------- Export Picker Modal ---------- */
-#exportPicker{
-  position: fixed; inset:0; display:none; z-index:10000;
-  background: rgba(0,0,0,.45);
-  align-items:center; justify-content:center;
-}
+/* Export picker */
+#exportPicker{ position:fixed; inset:0; display:none; z-index:1200; background:rgba(0,0,0,.45); align-items:center; justify-content:center; }
 #exportCard{
-  background: var(--gh-surface);
-  color: var(--gh-text);
-  border:1px solid var(--gh-border);
-  border-radius: var(--radius);
-  width: 92vw; max-width: 460px;
-  padding: 16px;
-  box-shadow: 0 8px 24px rgba(0,0,0,.35);
+  background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:10px;
+  width:420px; max-width:96vw; padding:14px; box-shadow:0 8px 24px rgba(0,0,0,.35);
 }
-#exportCard header{ font-weight:700; margin-bottom:10px; font-size: var(--fs-lg); }
 #exportCard .row{ display:flex; gap:10px; align-items:center; margin-top:10px; }
-#exportCard select, #exportCard button{
-  min-height: 44px;
-  font-size: var(--fs-md);
-}
-#exportCard .actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:12px; }
-#exportCard button:hover{ background:#1b2230; }
+#exportCard .actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
 
-/* ---------- Utilities ---------- */
-body.modal-open{ overflow:hidden; }
-
-/* Subtle scrollbars */
-*::-webkit-scrollbar{ height:10px; width:10px; }
-*::-webkit-scrollbar-thumb{ background:#30363d; border-radius:10px; }
-*::-webkit-scrollbar-thumb:hover{ background:#3b4150; }
-/* ===== Mobile comfort pass (drop at END of style.css) ===== */
-
-/* Make all form controls full-width and comfy */
-.panel input[type="text"],
-.panel input[type="password"],
-.panel input[type="file"],
-.panel select,
-.panel button {
-  width: 100%;
-  box-sizing: border-box;
-  display: block;
-  margin-top: 8px;
+/* Options modal (reused style) */
+.modal{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.6); z-index:2000; }
+.modal.hidden{ display:none; }
+.modal .modal-card{
+  background:var(--surface); border:1px solid var(--border); border-radius:10px;
+  width:min(640px,94vw); max-height:90vh; overflow:auto; padding:14px;
 }
 
-/* Space between stacked controls */
-.panel > * + * { margin-top: 10px; }
-
-/* Header sizing a bit smaller to reduce crowding */
-header h1 { font-size: 1.4rem; }
-
-/* Controls container: single column on phones, roomy spacing */
-#controls {
-  grid-template-columns: 1fr;
-  gap: 14px;
-  padding: 12px;
+/* Puter auth gate modal */
+#puterAuthModal{ z-index:3000; }
+#puterAuthModal .modal-card header{ font-weight:700; margin-bottom:6px; }
+.btn-row { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 6px; }
+.btn {
+  background:#21262d; border:1px solid #30363d; color:#e6edf3;
+  border-radius:8px; padding:10px 14px; cursor:pointer; font-size:14px;
 }
-
-/* Main switches to single column on phones */
-main { display: block; padding: 12px; }
-#threads { margin-bottom: 12px; }
-
-/* Thread list items: bigger tap targets */
-#threadList li {
-  padding: 14px 12px;
-  font-size: 1.05rem;
+.btn:hover{ background:#30363d; }
+.btn.primary{ background:#238636; border-color:#2ea043; }
+.btn.primary:hover{ background:#2ea043; }
+.auth-widget { margin-top:10px; padding:10px; border:1px dashed #30363d; border-radius:8px; }
+/* Job status dock */
+#jobStatusDock{
+  position:fixed; right:0; bottom:0; width:340px; max-width:100%; max-height:50vh; overflow:auto;
+  background:var(--surface); border:1px solid var(--border); border-right:none; border-bottom:none;
+  border-top-left-radius:10px; padding:12px; z-index:1500;
 }
+#jobStatusDock.hidden{ display:none; }
+#jobStatusDock header{ font-weight:700; margin-bottom:6px; }
+#jobStatusText{ font-size:14px; margin-bottom:8px; }
+.progress{ width:100%; height:8px; background:#21262d; border-radius:4px; overflow:hidden; margin-bottom:8px; }
+#jobProgressBar{ height:100%; width:0%; background:var(--ok); }
+#jobLogs{ font-size:12px; color:var(--muted); max-height:120px; overflow:auto; border-top:1px solid var(--border); padding-top:6px; }
+#digestContent{ font-size:14px; line-height:1.45; }
 
-/* Buttons a touch larger */
-button, input, select {
-  font-size: 1.05rem;
-  min-height: 46px;
-  padding: 0.75em 1em;
-  border-radius: 12px;
-}
-
-/* Cards in results: slightly larger snippet text */
-.card .snippet { font-size: 1.05rem; }
-
-/* Overlay fills phone screen, with chunkier header controls */
-#searchPanel { width: 100%; height: 100%; border-radius: 0; }
-#searchHeader { padding: 12px; gap: 12px; }
-#searchHeader .right button,
-#searchHeader .right select { min-height: 44px; }
-
-/* Export picker: wider buttons */
-#exportCard select, #exportCard button { min-height: 46px; }
-
-/* ===== Tablet/Desktop refinements ===== */
-@media (min-width: 700px) {
-  /* Two columns for controls feels less cramped than three */
-  #controls {
-    grid-template-columns: repeat(2, minmax(280px, 1fr));
-    gap: 16px;
-    padding: 14px 16px;
-  }
-}
-
-@media (min-width: 1000px) {
-  /* Main: sidebar + content */
-  main {
-    display: grid;
-    grid-template-columns: 320px 1fr;
-    gap: 16px;
-  }
-  /* Centered modal on larger screens */
-  #searchPanel {
-    width: min(1000px, 94vw);
-    height: min(86vh, 94vh);
-    border: 1px solid var(--gh-border);
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0,0,0,.35);
-  }
-  /* Inputs/buttons not 100% on desktop—look nicer inline */
-  .panel input[type="text"],
-  .panel input[type="password"],
-  .panel input[type="file"],
-  .panel select,
-  .panel button {
-    width: auto;
-    display: inline-block;
-    margin-top: 6px;
-  }
-  /* Keep full-width for the long text fields specifically */
-  #searchBox, #recallBox, #openaiKey, #openaiModel { width: 100%; display: block; }
-}
-
-/* Tiny phones (≤360px): bump base a hair and reduce paddings */
-@media (max-width: 360px) {
-  html, body { font-size: 19px; }
-  .panel { padding: 14px; }
-  #searchHeader { padding: 10px; }
+/* Responsive */
+@media (max-width: 900px){
+  main{ display:block; padding: 0 12px 12px; }
+  #threads{ max-height:none; margin:0 0 12px 0; }
+  #searchPanel{ width:100%; height:100%; border-radius:0; }
+  #jobStatusDock{ width:100%; left:0; border-radius:0; }
+  #controls{ padding:12px; }
 }

@@ -1,377 +1,254 @@
-/* worker.js — parser + local DB + progress-aware streaming search */
+/* worker.js — Memora (ingest + IndexedDB + streaming search) */
 
 let db;
-const DB_NAME = 'neurosyn-archive';
-const DB_VER = 3; // bump if schema changes
+const DB_NAME = 'memora-db';
+const DB_VERSION = 3; // bump
+const STORE = 'messages';
 
-// ---------- DB init ----------
+/* ===========================
+   IndexedDB
+   =========================== */
 function openDb() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VER);
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = (e) => {
-      const d = e.target.result;
-      if (!d.objectStoreNames.contains('threads')) {
-        const s = d.createObjectStore('threads', { keyPath: 'id' });
-        s.createIndex('byTitle', 'title', { unique: false });
-        s.createIndex('byCreated', 'created_at', { unique: false });
-      }
-      if (!d.objectStoreNames.contains('messages')) {
-        const s = d.createObjectStore('messages', { keyPath: 'id' });
-        s.createIndex('byThread', 'thread_id', { unique: false });
-        s.createIndex('byTs', 'timestamp', { unique: false });
-      }
-      if (!d.objectStoreNames.contains('feedback')) {
-        const s = d.createObjectStore('feedback', { keyPath: 'id' });
-        s.createIndex('byMessage', 'message_id', { unique: false });
-      }
-      if (!d.objectStoreNames.contains('users')) {
-        d.createObjectStore('users', { keyPath: 'id' });
-      }
-    };
-    req.onsuccess = () => { db = req.result; resolve(db); };
-    req.onerror = () => reject(req.error);
-  });
-}
-
-// ---------- small DB helpers ----------
-function put(store, obj) {
-  return new Promise((resolve, reject) => {
-    const t = db.transaction(store, 'readwrite');
-    t.objectStore(store).put(obj);
-    t.oncomplete = () => resolve();
-    t.onerror = () => reject(t.error);
-  });
-}
-
-function bulkPut(store, arr) {
-  return new Promise((resolve, reject) => {
-    const t = db.transaction(store, 'readwrite');
-    const s = t.objectStore(store);
-    for (const o of arr) s.put(o);
-    t.oncomplete = () => resolve();
-    t.onerror = () => reject(t.error);
-  });
-}
-
-function clearAll() {
-  return new Promise((resolve, reject) => {
-    const t = db.transaction(['threads','messages','feedback','users'], 'readwrite');
-    t.objectStore('threads').clear();
-    t.objectStore('messages').clear();
-    t.objectStore('feedback').clear();
-    t.objectStore('users').clear();
-    t.oncomplete = () => resolve();
-    t.onerror = () => reject(t.error);
-  });
-}
-
-function listThreads() {
-  return new Promise((resolve, reject) => {
-    const t = db.transaction('threads', 'readonly');
-    const req = t.objectStore('threads').getAll();
-    req.onsuccess = () => resolve(req.result || []);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-function getMessagesByThread(tid) {
-  return new Promise((resolve, reject) => {
-    const t = db.transaction('messages', 'readonly');
-    const idx = t.objectStore('messages').index('byThread');
-    const req = idx.getAll(IDBKeyRange.only(tid));
-    req.onsuccess = () => resolve(req.result || []);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-function countMessages() {
-  return new Promise((resolve, reject) => {
-    const t = db.transaction('messages', 'readonly');
-    const store = t.objectStore('messages');
-    const req = store.count();
-    req.onsuccess = () => resolve(req.result || 0);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-// ---------- parsing helpers ----------
-function normalizeText(htmlOrMd='') {
-  return htmlOrMd.replace(/<br\s*\/?>/gi, '\n')
-                 .replace(/<[^>]*>/g, '')
-                 .replace(/\s+\n/g, '\n')
-                 .trim();
-}
-
-function extractParts(m) {
-  const content = m?.content;
-  if (!content) return '';
-  if (typeof content === 'string') return content;
-  if (Array.isArray(content?.parts)) {
-    return content.parts.map(p => typeof p === 'string' ? p : (p?.text ?? '')).join('\n').trim();
-  }
-  if (typeof content?.text === 'string') return content.text;
-  return String(content || '');
-}
-
-function toISO(ts) {
-  if (!ts) return '';
-  if (typeof ts === 'number') {
-    const ms = ts > 1e12 ? ts : ts * 1000;
-    return new Date(ms).toISOString();
-  }
-  const d = new Date(ts);
-  return isNaN(d.getTime()) ? '' : d.toISOString();
-}
-
-// ---------- ingestion ----------
-async function parseAndIngest(name, text) {
-  const lower = name.toLowerCase();
-
-  if (lower === 'user.json') {
-    try {
-      const j = JSON.parse(text);
-      await put('users', { id: 'me', ...j });
-      postMessage({ type:'status', msg:'user.json loaded' });
-    } catch (e) {
-      postMessage({ type:'error', msg:`user.json parse error ${e}` });
-    }
-    return;
-  }
-
-  if (lower === 'message_feedback.json') {
-    try {
-      const j = JSON.parse(text);
-      const arr = Array.isArray(j) ? j : (j?.message_feedback || []);
-      const rows = arr.map((r, i) => ({
-        id: r.id || `fb_${i}`,
-        message_id: r.message_id || r.messageId || '',
-        rating: r.rating || r.label || '',
-        comment: r.comment || '',
-        timestamp: toISO(r.created_at || r.timestamp || '')
-      }));
-      await bulkPut('feedback', rows);
-      postMessage({ type:'status', msg:`message_feedback.json: ${rows.length} items` });
-    } catch (e) {
-      postMessage({ type:'error', msg:`message_feedback.json parse error ${e}` });
-    }
-    return;
-  }
-
-  if (lower === 'chat.html') {
-    const cleaned = normalizeText(text);
-    const tid = `html_${Date.now()}`;
-    await put('threads', { id: tid, title: 'chat.html transcript', created_at: new Date().toISOString() });
-    await put('messages', { id: `${tid}_0`, thread_id: tid, role: 'system', text: cleaned, timestamp: '' });
-    postMessage({ type:'status', msg:'chat.html ingested as single thread' });
-    const threads = await listThreads();
-    postMessage({ type:'THREADS', threads });
-    return;
-  }
-
-  if (lower === 'conversations.json') {
-    let root;
-    try { root = JSON.parse(text); }
-    catch {
-      // JSONL fallback
-      const lines = text.split(/\r?\n/).filter(Boolean);
-      root = lines.map(l => JSON.parse(l));
-    }
-
-    // normalize to array of conversations
-    let conversations = [];
-    if (Array.isArray(root)) conversations = root;
-    else {
-      const candidates = [
-        root?.conversations, root?.items, root?.threads, root?.data,
-        root?.conversation_data, root?.archived_conversations, root?.shared_conversations
-      ].filter(Boolean);
-      conversations = Array.isArray(candidates[0]) ? candidates[0] : [];
-    }
-
-    if (!Array.isArray(conversations) || conversations.length === 0) {
-      postMessage({ type:'error', msg:'conversations.json: no conversations found (unknown format)' });
-      return;
-    }
-
-    let tcount = 0, mcount = 0;
-
-    for (const c of conversations) {
-      const tid = c.id || c.conversation_id || crypto.randomUUID();
-      const title = c.title || c.summary || c.name || `Thread ${tid.slice(-6)}`;
-      const created = c.create_time || c.created_at || c.createTime || c.started_at || '';
-      await put('threads', { id: tid, title, created_at: toISO(created) });
-
-      const messages = c.messages || c.mapping || c.logs || c.msgs || c.entries || [];
-      let flat = [];
-
-      if (Array.isArray(messages)) {
-        flat = messages.map((m, i) => {
-          const role = m.author?.role || m.role || 'assistant';
-          const text = extractParts(m) || m.text || '';
-          const ts = toISO(m.create_time || m.created_at || m.timestamp || m.time);
-          const mid = m.id || `${i}`;
-          return { id: `${tid}_${mid}`, thread_id: tid, role, text, timestamp: ts };
-        });
-      } else if (messages && typeof messages === 'object') {
-        // mapping shape: { [id]: { message: {...}, parent, children } }
-        for (const k of Object.keys(messages)) {
-          const node = messages[k];
-          const msg = node?.message || node;
-          if (!msg) continue;
-          const role = msg.author?.role || msg.role || 'assistant';
-          const parts = extractParts(msg) || msg.text || '';
-          const ts = toISO(msg.create_time || msg.created_at || msg.timestamp);
-          flat.push({ id: `${tid}_${k}`, thread_id: tid, role, text: parts, timestamp: ts });
-        }
-      }
-
-      flat = flat
-        .filter(x => x.text && x.text.trim())
-        .map(x => ({ ...x, text: x.text.trim().slice(0, 20000) }));
-
-      if (flat.length) {
-        for (let i = 0; i < flat.length; i += 300) {
-          await bulkPut('messages', flat.slice(i, i + 300));
-        }
-        mcount += flat.length;
-      }
-      tcount += 1;
-      postMessage({ type:'status', msg:`Ingested thread: ${title} (${flat.length} msgs)` });
-    }
-
-    postMessage({ type:'status', msg:`Done. Threads: ${tcount}, Messages: ${mcount}` });
-    const threads = await listThreads();
-    postMessage({ type:'THREADS', threads });
-    return;
-  }
-
-  postMessage({ type:'status', msg:`Skipped file: ${name}` });
-}
-
-// ---------- basic keyword search (fallback) ----------
-function keywordSearchAll(q, limit = 300) {
-  q = q.toLowerCase();
-  return new Promise((resolve, reject) => {
-    const t = db.transaction('messages', 'readonly');
-    const store = t.objectStore('messages');
-    const req = store.getAll();
-    req.onsuccess = () => {
-      const all = req.result || [];
-      const hits = [];
-      for (const m of all) {
-        const txt = (m.text || '').toLowerCase();
-        if (txt.includes(q)) hits.push(m);
-        if (hits.length >= limit) break;
-      }
-      resolve(hits);
-    };
-    req.onerror = () => reject(req.error);
-  });
-}
-
-// ---------- streaming search with progress ----------
-let activeSearchId = 0;
-
-async function streamSearchWithProgress(payload) {
-  const { query, batch = 100, maxMatches = 2000, forRecall = false, searchId } = payload;
-  const q = (query || '').toLowerCase();
-  activeSearchId = searchId;
-
-  // Announce total (for determinate progress)
-  let total = 0;
-  try { total = await countMessages(); } catch {}
-  postMessage({ type:'SEARCH_META', total, query, forRecall, searchId });
-
-  return new Promise((resolve, reject) => {
-    const t = db.transaction('messages', 'readonly');
-    const store = t.objectStore('messages');
-    const req = store.openCursor();
-
-    let scanned = 0, matched = 0;
-    let out = [];
-    let tick = 0;
-
-    const emitProgress = () => {
-      postMessage({ type:'SEARCH_PROGRESS', query, scanned, matched, total, searchId });
-    };
-
-    req.onsuccess = (e) => {
-      if (activeSearchId !== searchId) { resolve(); return; } // canceled by new search
-      const cursor = e.target.result;
-      if (cursor) {
-        scanned++;
-        const val = cursor.value;
-        const txt = (val.text || '').toLowerCase();
-        if (txt.includes(q)) {
-          out.push(val);
-          matched++;
-          if (out.length >= batch) {
-            postMessage({ type:'SEARCH_BATCH', query, batch: out, done: false, forRecall, searchId });
-            out = [];
-          }
-          if (matched >= maxMatches) {
-            if (out.length) postMessage({ type:'SEARCH_BATCH', query, batch: out, done: false, forRecall, searchId });
-            postMessage({ type:'SEARCH_BATCH', query, batch: [], done: true, forRecall, searchId });
-            emitProgress();
-            resolve();
-            return;
-          }
-        }
-        if (++tick % 200 === 0) emitProgress(); // throttle UI noise
-        cursor.continue();
+      const db = e.target.result;
+      let store;
+      if (!db.objectStoreNames.contains(STORE)) {
+        store = db.createObjectStore(STORE, { keyPath: 'id', autoIncrement: true });
       } else {
-        if (out.length) postMessage({ type:'SEARCH_BATCH', query, batch: out, done: false, forRecall, searchId });
-        postMessage({ type:'SEARCH_BATCH', query, batch: [], done: true, forRecall, searchId });
-        emitProgress();
-        resolve();
+        store = req.transaction.objectStore(STORE);
       }
+      try { store.createIndex('thread_id', 'thread_id'); } catch {}
+      try { store.createIndex('timestamp', 'timestamp'); } catch {}
+      try { store.createIndex('role', 'role'); } catch {}
+      try { store.createIndex('text', 'text'); } catch {}
     };
-
-    req.onerror = () => reject(req.error);
+    req.onsuccess = (e) => { db = e.target.result; resolve(db); };
+    req.onerror = (e) => reject(e);
+  });
+}
+async function getStore(mode = 'readonly') {
+  if (!db) await openDb();
+  return db.transaction(STORE, mode).objectStore(STORE);
+}
+async function addMessages(msgs) {
+  if (!msgs || !msgs.length) return;
+  const store = await getStore('readwrite');
+  await new Promise((resolve, reject) => {
+    let pending = msgs.length;
+    msgs.forEach((m) => {
+      try {
+        store.put(m).onsuccess = () => { if (--pending === 0) resolve(); };
+      } catch (err) { reject(err); }
+    });
+  });
+}
+async function getAllMessages() {
+  const store = await getStore();
+  return new Promise((res, rej) => {
+    const req = store.getAll();
+    req.onsuccess = () => res(req.result || []);
+    req.onerror = (e) => rej(e);
+  });
+}
+async function clearDb() {
+  const store = await getStore('readwrite');
+  return new Promise((res, rej) => {
+    const req = store.clear();
+    req.onsuccess = () => res();
+    req.onerror = (e) => rej(e);
   });
 }
 
-// ---------- message router ----------
-self.onmessage = async (e) => {
-  const { type, payload } = e.data;
-  if (!db) await openDb();
+/* ===========================
+   Parsing helpers
+   =========================== */
+function coerceThreadId(conv, i) {
+  return conv.id || conv.conversation_id || (conv.title && `title:${conv.title}`) || `conv-${i}`;
+}
+function normalizeMessage(tid, role, text, ts) {
+  return {
+    thread_id: tid || '(no thread)',
+    role: role || 'unknown',
+    text: text || '',
+    timestamp: ts || null
+  };
+}
 
+function parseConversationsArray(arr) {
+  const out = [];
+  for (let i=0;i<arr.length;i++) {
+    const conv = arr[i];
+    const tid = coerceThreadId(conv, i);
+    if (conv.mapping && typeof conv.mapping === 'object') {
+      for (const node of Object.values(conv.mapping)) {
+        const m = node?.message;
+        if (!m) continue;
+        const role = m.author?.role || 'unknown';
+        let text = '';
+        if (Array.isArray(m.content?.parts)) text = m.content.parts.join(' ');
+        else if (typeof m.content === 'string') text = m.content;
+        const ts = m.create_time || conv.create_time || conv.update_time || null;
+        out.push(normalizeMessage(tid, role, text, ts));
+      }
+      continue;
+    }
+    if (Array.isArray(conv.messages)) {
+      for (const mm of conv.messages) {
+        out.push(normalizeMessage(
+          tid,
+          mm.role || mm.author || 'unknown',
+          mm.text || mm.content || '',
+          mm.timestamp || mm.create_time || null
+        ));
+      }
+      continue;
+    }
+  }
+  return out;
+}
+
+function parseChatHTML(htmlText) {
+  // Best-effort only. The HTML export varies; rely on conversations.json as source of truth.
+  const out = [];
+  const lines = String(htmlText).split(/\r?\n/);
+  const tid = 'chat-html';
+  for (let i=0;i<lines.length;i++) {
+    const ln = lines[i];
+    const content = ln.match(/class=["']content["'][^>]*>(.*?)</i);
+    if (content) {
+      const clean = stripHtml(content[1]);
+      if (clean) out.push(normalizeMessage(tid, 'unknown', clean, null));
+    }
+  }
+  return out;
+}
+function stripHtml(s) { return String(s).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim(); }
+
+function parseFile(name, text) {
+  const lower = name.toLowerCase();
   try {
-    if (type === 'CLEAR_DB') {
-      await clearAll();
-      postMessage({ type:'status', msg:'IndexedDB cleared.' });
-      postMessage({ type:'THREADS', threads: [] });
-      return;
+    if (lower.endsWith('.json')) {
+      const data = JSON.parse(text);
+
+      if (Array.isArray(data)) {
+        // conversations.json (common)
+        return parseConversationsArray(data);
+      }
+
+      if (Array.isArray(data?.conversations)) {
+        // some exports nest conversations here
+        return parseConversationsArray(data.conversations);
+      }
+
+      if (Array.isArray(data?.message_feedback)) {
+        // feedback has no messages; ignore
+        return [];
+      }
+
+      // user.json contains profile/metadata; not messages
+      postMessage({ type:'status', msg:`Unrecognized JSON structure in ${name}; skipping.` });
+      return [];
     }
 
+    if (lower.endsWith('.html')) {
+      const msgs = parseChatHTML(text);
+      if (!msgs.length) postMessage({ type:'status', msg:`Parsed 0 messages from ${name} (HTML parsing is best-effort).` });
+      return msgs;
+    }
+  } catch (e) {
+    postMessage({ type:'error', msg:`Failed to parse ${name}: ${e.message}` });
+    return [];
+  }
+  postMessage({ type:'status', msg:`Unsupported file type: ${name}` });
+  return [];
+}
+
+/* ===========================
+   Threads & search
+   =========================== */
+function titleFromMessages(msgs) {
+  const userMsg = msgs.find(m => (m.role || '').toLowerCase() === 'user' && m.text);
+  if (userMsg) return userMsg.text.slice(0, 80);
+  const any = msgs.find(m => m.text);
+  return any ? any.text.slice(0, 80) : '(untitled)';
+}
+
+async function listThreads() {
+  const msgs = await getAllMessages();
+  const map = new Map();
+  for (const m of msgs) {
+    const tid = m.thread_id || '(no thread)';
+    if (!map.has(tid)) map.set(tid, []);
+    map.get(tid).push(m);
+  }
+  const threads = [];
+  for (const [tid, arr] of map.entries()) {
+    arr.sort((a,b)=> String(a.timestamp||'').localeCompare(String(b.timestamp||'')));
+    threads.push({ id: tid, title: titleFromMessages(arr), count: arr.length });
+  }
+  postMessage({ type:'THREADS', threads });
+}
+
+async function fetchThread(tid) {
+  const msgs = (await getAllMessages()).filter(m => (m.thread_id || '(no thread)') === tid);
+  msgs.sort((a,b)=> String(a.timestamp||'').localeCompare(String(b.timestamp||'')));
+  postMessage({ type:'THREAD_MSGS', tid, messages: msgs });
+}
+
+async function searchStream({ query, batch=100, maxMatches=2000, searchId }) {
+  const q = (query || '').toLowerCase();
+  const msgs = await getAllMessages();
+  const total = msgs.length;
+  postMessage({ type:'SEARCH_META', total, searchId });
+
+  let matched = 0;
+  const buf = [];
+
+  for (let i=0; i<msgs.length; i++) {
+    const m = msgs[i];
+    const hay = (m.text || '').toLowerCase();
+    if (q && hay.includes(q)) {
+      buf.push(m);
+      matched++;
+      if (buf.length >= batch) {
+        postMessage({ type:'SEARCH_BATCH', batch: buf.splice(0), done:false, searchId });
+      }
+      if (matched >= maxMatches) break;
+    }
+    if ((i % 500) === 0) {
+      postMessage({ type:'SEARCH_PROGRESS', scanned:i, total, matched, searchId });
+      await new Promise(r => setTimeout(r,0));
+    }
+  }
+  if (buf.length) {
+    postMessage({ type:'SEARCH_BATCH', batch: buf, done:false, searchId });
+  }
+  postMessage({ type:'SEARCH_BATCH', batch: [], done:true, searchId });
+  postMessage({ type:'SEARCH_PROGRESS', scanned: total, total, matched, searchId });
+}
+
+/* ===========================
+   Router
+   =========================== */
+onmessage = async (e) => {
+  const { type, payload } = e.data || {};
+  try {
     if (type === 'INGEST_FILE') {
-      await parseAndIngest(payload.name, payload.text);
-      return; // parseAndIngest will post THREADS if relevant
-    }
-
-    if (type === 'LIST_THREADS') {
-      const threads = await listThreads();
-      postMessage({ type:'THREADS', threads });
+      const { name, text } = payload || {};
+      const msgs = parseFile(name, text);
+      if (msgs.length) await addMessages(msgs);
+      postMessage({ type:'status', msg:`Ingested ${msgs.length} messages from ${name}` });
+      // NEW: refresh threads after each ingest so the sidebar updates
+      await listThreads();
       return;
     }
-
-    if (type === 'FETCH_THREAD') {
-      const msgs = await getMessagesByThread(payload.tid);
-      postMessage({ type:'THREAD_MSGS', tid: payload.tid, messages: msgs });
-      return;
-    }
-
-    if (type === 'SEARCH') {
-      const hits = await keywordSearchAll(payload.query, payload.limit || 300);
-      postMessage({ type:'SEARCH_RESULTS', query: payload.query, results: hits });
-      return;
-    }
-
-    if (type === 'SEARCH_STREAM') {
-      await streamSearchWithProgress(payload);
-      return;
-    }
+    if (type === 'LIST_THREADS') { await listThreads(); return; }
+    if (type === 'FETCH_THREAD') { await fetchThread(payload?.tid); return; }
+    if (type === 'SEARCH_STREAM') { await searchStream(payload || {}); return; }
+    if (type === 'CLEAR_DB') { await clearDb(); postMessage({ type:'status', msg:'DB cleared' }); await listThreads(); return; }
   } catch (err) {
-    postMessage({ type:'error', msg: String(err) });
+    postMessage({ type:'error', msg:String(err) });
   }
 };
