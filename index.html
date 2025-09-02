@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Conversation Archive Explorer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="theme-dark">
+  <header>
+    <h1>Conversation Archive Explorer</h1>
+    <div id="ingestStatus"></div>
+  </header>
+
+  <div id="controls">
+    <div class="panel">
+      <h2>Import Files</h2>
+      <input type="file" id="fileInput" multiple>
+      <div id="dropZone">Drop files here</div>
+      <button id="clearDb">Reset IndexedDB</button>
+    </div>
+
+    <div class="panel">
+      <h2>Search</h2>
+      <input type="text" id="searchBox" placeholder="Search keyword">
+      <button id="searchBtn">Search</button>
+    </div>
+
+    <div class="panel">
+      <h2>Recall</h2>
+      <input type="text" id="recallBox" placeholder="$RECALL keyword">
+      <button id="recallBtn">Recall</button>
+    </div>
+
+    <div class="panel">
+      <h2>Options</h2>
+      <label>OpenAI Key</label><br>
+      <input type="password" id="openaiKey" placeholder="sk-..."><br>
+      <label>Model</label><br>
+      <input type="text" id="openaiModel" value="gpt-4o-mini"><br>
+      <button id="saveOpts">Save Options</button>
+    </div>
+  </div>
+
+  <main>
+    <div id="threads" class="panel">
+      <h2>Threads</h2>
+      <ul id="threadList"></ul>
+    </div>
+    <div id="content" class="panel">
+      <h2>Content</h2>
+      <div id="results"></div>
+    </div>
+  </main>
+
+  <!-- Floating search overlay -->
+  <div id="searchOverlay">
+    <div id="searchPanel">
+      <div id="searchHeader">
+        <div class="left">
+          <b id="searchTitle">Results</b>
+          <div id="searchProgress"><div class="bar"></div></div>
+          <span id="searchCounts" class="hint"></span>
+        </div>
+        <div class="right">
+          <label>View</label>
+          <select id="searchView">
+            <option value="grid">Grid</option>
+            <option value="row">Row</option>
+            <option value="list">List</option>
+          </select>
+          <button id="mergeBtn" class="small">Merge Results</button>
+          <button id="loadMoreBtn" class="small">Load 200 more</button>
+          <button id="closeSearch" class="small">Close</button>
+        </div>
+      </div>
+      <div id="searchBody">
+        <div id="searchGrid" class="results-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export picker modal -->
+  <div id="exportPicker">
+    <div id="exportCard">
+      <header>Export merged results</header>
+      <div>Exporting <b id="exportCount">0</b> items for <b id="exportTitle"></b>.</div>
+      <div class="row">
+        <label for="exportType">Format</label>
+        <select id="exportType">
+          <option value="txt">Plain text (.txt)</option>
+          <option value="md">Markdown (.md)</option>
+          <option value="json">JSON (.json)</option>
+          <option value="pdf">PDF (print/save as PDF)</option>
+        </select>
+      </div>
+      <div class="actions">
+        <button id="exportCancel">Cancel</button>
+        <button id="exportGo">Export</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
