@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://memora.vercel.app" target="_blank"><b>🌐 Live Demo</b></a>
+  <a href="https://memora-amber.vercel.app/" target="_blank"><b>🌐 Live Demo</b></a>
 </p>
 
 ---
@@ -55,7 +55,7 @@
    ```
 3. Open `http://localhost:3000` in your browser.  
 
-Or try it right away here: **[Live Demo](https://memora.vercel.app)**  
+Or try it right away here: **[Live Demo](https://memora-amber.vercel.app/)**  
 
 ---
 
